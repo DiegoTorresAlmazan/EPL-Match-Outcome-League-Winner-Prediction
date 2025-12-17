@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 # -----------------------------
 # Configuration
@@ -23,19 +24,28 @@ def ensure_directories():
     os.makedirs(FOOTBALL_DATA_DIR, exist_ok=True)
     os.makedirs(ELO_DATA_DIR, exist_ok=True)
 
-def download_file(url, output_path):
-    if os.path.exists(output_path):
-        print(f"[SKIP] {output_path} already exists")
-        return
+import requests
+import time
 
-    print(f"[DOWNLOADING] {url}")
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
+def download_file(url, output_path, retries=5, timeout=60):
+    for attempt in range(1, retries + 1):
+        try:
+            print(f"[ATTEMPT {attempt}] Downloading {url}")
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
 
-    with open(output_path, "wb") as f:
-        f.write(response.content)
+            with open(output_path, "wb") as f:
+                f.write(response.content)
 
-    print(f"[SAVED] {output_path}")
+            print(f"[SUCCESS] Saved to {output_path}")
+            return
+
+        except requests.exceptions.RequestException as e:
+            print(f"[WARNING] Attempt {attempt} failed: {e}")
+            if attempt < retries:
+                time.sleep(5)
+            else:
+                print("[ERROR] All retries failed. Skipping download.")
 
 # -----------------------------
 # Download EPL Match Data
@@ -60,7 +70,11 @@ def download_epl_match_data():
 
 def download_elo_data():
     output_path = os.path.join(ELO_DATA_DIR, "club_elo.csv")
-    download_file(ELO_DATA_URL, output_path)
+    try:
+        download_file(ELO_DATA_URL, output_path)
+    except Exception as e:
+        print("[WARNING] Club ELO download failed. Continuing without ELO data.")
+
 
 # -----------------------------
 # Main
