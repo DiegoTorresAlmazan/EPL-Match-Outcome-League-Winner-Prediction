@@ -11,3 +11,9 @@ models/*.joblib
 # Ignore OS / editor junk
 .DS_Store
 Thumbs.db
+
+# Ignore everything in data/
+data/**/*
+
+# But don't ignore the .gitkeep files so the folders stay in the repo
+!data/**/.gitkeep
